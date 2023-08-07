@@ -11,7 +11,9 @@
 #define SCREEN_H 1280
 
 #define CUBE_SIZE 5
-#define PRECISION 3
+#define PRECISION 10
+
+#define UPDATE_TIME 200
 
 typedef struct {
   bool cube[CUBE_SIZE * PRECISION][CUBE_SIZE * PRECISION]
@@ -57,8 +59,12 @@ void DisplayCube() {
               (Vector3){(float)x / PRECISION + tr, (float)y / PRECISION + tr,
                         (float)z / PRECISION + tr};
 
-          DrawCube(pos, size, size, size, DARKBLUE);
-          DrawCubeWires(pos, size, size, size, WHITE);
+          float e = (float)(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z) /
+                    (CUBE_SIZE * CUBE_SIZE);
+          // printf("%f\n", e);
+          Color c = ColorFromHSV(360 * e, 1, 1);
+          DrawCube(pos, size, size, size, c);
+          // DrawCubeWires(pos, size, size, size, WHITE);
         }
       }
     }
@@ -112,7 +118,7 @@ void UpdateCube() {
       for (int z = 0; z < s; ++z) {
         int c = count_neightbors(x, y, z);
 
-        newgol.cube[x][y][z] = (c > 1 && c < 10);
+        newgol.cube[x][y][z] = (c == 2 || c == 3);
       }
     }
   }
@@ -143,11 +149,15 @@ int main() {
   cam.fovy = 45.0f;
   cam.projection = CAMERA_PERSPECTIVE;
 
-  fill_randomly(0.3f);
+  // fill_randomly(0.3f);
 
-  // gol.cube[0][0][0] = true;
+  int s = CUBE_SIZE * PRECISION;
+  gol.cube[s / 2][s / 2][s / 2] = true;
+  gol.cube[s / 2 - 1][s / 2][s / 2] = true;
+  gol.cube[s / 2 + 1][s / 2][s / 2] = true;
 
   bool play = false;
+  float t = 0.0f;
 
   while (!WindowShouldClose()) {
 
@@ -165,8 +175,12 @@ int main() {
     if (IsKeyPressed(KEY_SPACE))
       play = !play;
 
-    if (play)
+    t += GetFrameTime() * 1000;
+
+    if (play && t > UPDATE_TIME) {
+      t = 0.0f;
       UpdateCube();
+    }
 
     BeginDrawing();
 
